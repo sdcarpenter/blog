@@ -1,0 +1,42 @@
+version: '3'
+
+services:
+  blog-mysql:
+    image: mysql:8
+    container_name: blog-mysql
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - MYSQL_DATABASE=wordpress
+    volumes: 
+      - blog-dbdata:/var/lib/mysql
+    command: '--default-authentication-plugin=mysql_native_password'
+    networks:
+      - app-network
+
+  blog-wordpress:
+    depends_on: 
+      - blog-mysql
+    build: .
+    container_name: blog-wordpress
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - WORDPRESS_DB_HOST=blog-mysql:3306
+      - WORDPRESS_DB_USER=$MYSQL_USER
+      - WORDPRESS_DB_PASSWORD=$MYSQL_PASSWORD
+      - WORDPRESS_DB_NAME=wordpress
+    volumes:
+      - ./php-conf/uploads.ini:/usr/local/etc/php/conf.d/uploads.ini
+      - nginxconfig_nginx:/var/www
+    networks:
+      - app-network
+
+volumes:
+  blog-dbdata:
+  nginxconfig_nginx:
+    external: true
+
+networks:
+  app-network:
+    driver: bridge
